@@ -1,0 +1,22 @@
+# Run with: uvx pre-commit run --all-files   (CI runs the same)
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.5
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/OCA/pylint-odoo
+    rev: v10.0.12
+    hooks:
+      - id: pylint_odoo
+        args: [--rcfile=.pylintrc]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-xml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: [--fix=lf]

@@ -1,0 +1,17 @@
+# pylint-odoo: the OCA checks for Odoo addons (manifest keys, XML ids, translations, SQL injection, ...).
+[MASTER]
+load-plugins=pylint_odoo
+score=n
+
+[ODOOLINT]
+manifest-required-authors=Ivan Khamar
+manifest-required-keys=license
+valid-odoo-versions=19.0
+
+[MESSAGES CONTROL]
+disable=all
+enable=odoolint,
+    sql-injection,
+    translation-required,
+    print-used,
+    manifest-version-format

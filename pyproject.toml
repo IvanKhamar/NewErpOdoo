@@ -1,0 +1,16 @@
+# Tooling only: the addons run inside the Odoo image, which brings Odoo and its Python packages.
+[tool.ruff]
+line-length = 120
+target-version = "py312"  # the Python of the odoo:19.0 image
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "C4"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["odoo"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[tool.ruff.lint.per-file-ignores]
+# Odoo loads an addon through the imports of its __init__.py, and a manifest is a bare dict.
+"__init__.py" = ["F401"]
+"__manifest__.py" = ["B018"]

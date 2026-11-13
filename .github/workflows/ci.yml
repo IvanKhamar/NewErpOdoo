@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - run: uvx pre-commit run --all-files --show-diff-on-failure
+
+  # The addons' tests in the same containers as on a developer's machine (docker-compose.yml).
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: echo "POSTGRES_PASSWORD=ci-only-password" > .env
+      - run: docker compose up -d --wait db
+      - run: docker compose run --rm odoo bash /mnt/tools/run_tests.sh
+
+  # The repo is public: every push and PR is scanned for keys, tokens and passwords.
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

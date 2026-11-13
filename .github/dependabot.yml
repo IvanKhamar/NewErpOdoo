@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  # The odoo:19.0-<date> image gets security fixes as new dated tags; majors (Odoo 20, PostgreSQL 18) are a phase of
+  # their own in docs/plan.md, not a Dependabot PR.
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

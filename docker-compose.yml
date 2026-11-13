@@ -1,0 +1,38 @@
+# Local Odoo for development: PostgreSQL and Odoo Community, both only on 127.0.0.1.
+# The password comes from the git-ignored .env (see .env.example).
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo"]
+      interval: 5s
+      retries: 20
+
+  odoo:
+    image: odoo:19.0-20261112
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: db
+      USER: odoo
+      PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    # --dev=xml: views are read from the files on every request, so XML changes need no restart.
+    command: ["--dev=xml"]
+    ports:
+      - "127.0.0.1:8069:8069"
+    volumes:
+      - ./addons:/mnt/extra-addons
+      - ./config/odoo.conf:/etc/odoo/odoo.conf:ro
+      - ./tools:/mnt/tools:ro
+      - odoo-data:/var/lib/odoo
+
+volumes:
+  db-data:
+  odoo-data:
