@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- The Nova Poshta methods of newerp_base become this provider, once on install. Without a key they still work
+         as a fixed price, so nothing changes until the account is filled in. -->
+    <data noupdate="1">
+        <function model="delivery.carrier" name="write">
+            <value eval="[ref('newerp_base.carrier_np_branch')]" />
+            <value eval="{'delivery_type': 'novaposhta', 'np_warehouse_kind': 'branch'}" />
+        </function>
+        <function model="delivery.carrier" name="write">
+            <value eval="[ref('newerp_base.carrier_np_locker')]" />
+            <value eval="{'delivery_type': 'novaposhta', 'np_warehouse_kind': 'locker'}" />
+        </function>
+    </data>
+</odoo>

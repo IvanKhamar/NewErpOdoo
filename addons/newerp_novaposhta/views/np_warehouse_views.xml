@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="np_warehouse_view_list" model="ir.ui.view">
+        <field name="name">newerp.np.warehouse.list</field>
+        <field name="model">newerp.np.warehouse</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false" delete="false" decoration-muted="not working">
+                <field name="city_name" />
+                <field name="name" string="Відділення" />
+                <field name="kind" string="Вид" />
+                <field name="max_weight" />
+                <field name="working" />
+            </list>
+        </field>
+    </record>
+
+    <record id="np_warehouse_view_search" model="ir.ui.view">
+        <field name="name">newerp.np.warehouse.search</field>
+        <field name="model">newerp.np.warehouse</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="city_name" />
+                <field name="name" string="Відділення" />
+                <filter name="working" string="Працюють" domain="[('working', '=', True)]" />
+                <filter name="lockers" string="Поштомати" domain="[('kind', '=', 'locker')]" />
+                <group>
+                    <filter name="group_city" string="Місто" context="{'group_by': 'city_name'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="np_warehouse_action" model="ir.actions.act_window">
+        <field name="name">Нова Пошта: відділення</field>
+        <field name="res_model">newerp.np.warehouse</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_working': 1}</field>
+    </record>
+
+    <menuitem
+        id="np_warehouse_menu"
+        name="Нова Пошта: відділення"
+        parent="sale.menu_sale_config"
+        action="np_warehouse_action"
+        sequence="91"
+    />
+</odoo>

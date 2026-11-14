@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_newerp_np_warehouse_user,newerp.np.warehouse user,model_newerp_np_warehouse,base.group_user,1,0,0,0
+access_newerp_np_warehouse_admin,newerp.np.warehouse admin,model_newerp_np_warehouse,newerp_base.group_admin,1,1,1,0

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_delivery_carrier_form" model="ir.ui.view">
+        <field name="name">delivery.carrier.form.inherit.newerp_novaposhta</field>
+        <field name="model">delivery.carrier</field>
+        <field name="inherit_id" ref="delivery.view_delivery_carrier_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Нова Пошта" name="novaposhta" invisible="delivery_type != 'novaposhta'">
+                    <group>
+                        <group string="Обліковий запис" groups="base.group_system">
+                            <field name="np_api_key" password="True" />
+                            <field name="np_sender_ref" />
+                            <field name="np_contact_ref" />
+                            <field name="np_sender_phone" />
+                            <field name="np_sender_city_ref" />
+                            <field name="np_sender_warehouse_ref" />
+                        </group>
+                        <group string="Посилки">
+                            <field name="np_warehouse_kind" />
+                            <field name="np_cargo_description" />
+                            <field name="np_payer" />
+                            <button
+                                name="action_np_update_warehouses"
+                                type="object"
+                                string="Оновити довідник відділень"
+                                class="btn-secondary"
+                                groups="base.group_system"
+                            />
+                        </group>
+                    </group>
+                    <p class="text-muted">
+                        Без ключа API спосіб працює як фіксована ціна. Ref-и відправника є в кабінеті Нової Пошти
+                        (Налаштування → Безпека → Ключ API) або в відповідях API Counterparty.getCounterparties.
+                    </p>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
