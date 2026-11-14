@@ -17,7 +17,7 @@ export PGHOST="${HOST:-db}" PGUSER="${USER:-odoo}" PGPASSWORD="${PASSWORD:?the o
 
 odoo -c /etc/odoo/odoo.conf -d "$db" -i "$addons" --test-enable --test-tags "$tags" --log-level=test --no-http 2>&1 | tee "$log"
 status=${PIPESTATUS[0]}
-dropdb --if-exists "$db" || true
+dropdb --if-exists --force "$db" || true
 
 if [ "$status" -ne 0 ]; then
     echo "run_tests: Odoo exited with $status" >&2

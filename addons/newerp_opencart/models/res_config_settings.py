@@ -17,6 +17,19 @@ class ResConfigSettings(models.TransientModel):
         "Мова OpenCart (language_id)", config_parameter="newerp_opencart.language_id", default=3
     )
 
+    newerp_opencart_warehouse_id = fields.Many2one(
+        "stock.warehouse",
+        "Склад для вітрини",
+        config_parameter="newerp_opencart.warehouse_id",
+        help="Вільний залишок цього складу (без зарезервованого замовленнями) йде на вітрину. "
+        "Порожньо — головний склад.",
+    )
+
+    def action_newerp_opencart_push_stock(self):
+        self.execute()
+        run = self.env["newerp.opencart.sync"].push_stock()
+        return _notification(self.env._("Залишки записано у вітрину. %(message)s", message=run.message))
+
     def action_newerp_opencart_check(self):
         self.execute()  # save what was typed before using it
         self.env["newerp.opencart.sync"].check_connection()

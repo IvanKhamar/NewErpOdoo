@@ -10,4 +10,14 @@
         <field name="interval_type">minutes</field>
         <field name="active" eval="False" />
     </record>
+
+    <record id="cron_push_stock" model="ir.cron">
+        <field name="name">OpenCart: залишки на вітрину</field>
+        <field name="model_id" ref="model_newerp_opencart_sync" />
+        <field name="state">code</field>
+        <field name="code">model._cron_push_stock()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="False" />
+    </record>
 </odoo>

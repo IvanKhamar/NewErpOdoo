@@ -61,6 +61,17 @@ class OpenCartSync(models.AbstractModel):
         self.import_catalog(raise_errors=False)
         self.import_orders(raise_errors=False)
 
+    @api.model
+    def push_stock(self, raise_errors=True, templates=None):
+        """The free stock of the linked products to the storefront. Returns the run. `templates` limits the push
+        (a check against a live shop); without it every linked product goes."""
+        return self._run("stock", lambda source: self._push_stock(source, templates), raise_errors)
+
+    @api.model
+    def _cron_push_stock(self):
+        if self.env["ir.config_parameter"].sudo().get_param(PARAM + "host"):
+            self.push_stock(raise_errors=False)
+
     def _run(self, kind, step, raise_errors):
         Run = self.env["newerp.opencart.run"].sudo()
         try:
@@ -288,3 +299,37 @@ class OpenCartSync(models.AbstractModel):
             order.action_cancel()
         elif status_id in CONFIRMED_STATUSES:
             order.action_confirm()
+
+    # ── Stock to the storefront ──
+
+    def _push_stock(self, source, templates=None):
+        """Each linked size gets its free quantity in the shop's warehouse (on hand minus what orders reserved),
+        rounded down; a product gets the sum of its sizes, or its own free quantity when it has no sizes. Only
+        quantities that differ from the storefront's are written."""
+        warehouse = self._stock_warehouse()
+        if templates is None:
+            templates = self.env["product.template"].search([("opencart_id", ">", 0)])
+        templates = templates.with_context(warehouse_id=warehouse.id)
+        # free_qty is computed, not stored, and kept in the cache: stock moved in this transaction must be read anew.
+        self.env["product.product"].invalidate_model(["free_qty"])
+        sizes, products = {}, {}
+        for template in templates:
+            linked = template.product_variant_ids.filtered(lambda v: v.opencart_id > 0)
+            for variant in linked:
+                sizes[variant.opencart_id] = max(int(variant.free_qty), 0)
+            if linked:
+                products[template.opencart_id] = sum(sizes[v.opencart_id] for v in linked)
+            elif len(template.product_variant_ids) == 1:
+                products[template.opencart_id] = max(int(template.product_variant_id.free_qty), 0)
+        current_sizes, current_products = source.stock(list(sizes), list(products))
+        changed_sizes = {row: qty for row, qty in sizes.items() if current_sizes.get(row) != qty}
+        changed_products = {pid: qty for pid, qty in products.items() if current_products.get(pid) != qty}
+        if changed_sizes or changed_products:
+            source.write_stock(changed_sizes, changed_products)
+        message = f"Розмірів: {len(changed_sizes)}, товарів: {len(changed_products)} (з {len(products)} пов'язаних)."
+        return 0, len(changed_sizes) + len(changed_products), message
+
+    def _stock_warehouse(self):
+        warehouse_id = self.env["ir.config_parameter"].sudo().get_param(PARAM + "warehouse_id")
+        warehouse = self.env["stock.warehouse"].browse(int(warehouse_id)).exists() if warehouse_id else None
+        return warehouse or self.env.ref("stock.warehouse0")
