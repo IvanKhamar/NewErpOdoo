@@ -1,0 +1,19 @@
+{
+    "name": "NewErp: Nova Poshta",
+    "summary": "Nova Poshta as an Odoo delivery provider: rates, branches, waybills and tracking",
+    "version": "19.0.1.0.0",
+    "category": "Inventory/Delivery",
+    "author": "Ivan Khamar",
+    "website": "https://github.com/IvanKhamar/NewErpOdoo",
+    "license": "LGPL-3",
+    "depends": ["newerp_base"],
+    "external_dependencies": {"python": ["requests"]},
+    "data": [
+        "security/ir.model.access.csv",
+        "views/np_warehouse_views.xml",
+        "views/delivery_carrier_views.xml",
+        "views/sale_order_views.xml",
+        "data/delivery_carrier_data.xml",
+        "data/ir_cron.xml",
+    ],
+}
