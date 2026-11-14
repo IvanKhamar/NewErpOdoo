@@ -1,7 +1,7 @@
 {
     "name": "NewErp: OpenCart connector",
     "summary": "Import categories, products with sizes, customers and orders from an OpenCart shop; stock back to it",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Sales",
     "author": "Ivan Khamar",
     "website": "https://github.com/IvanKhamar/NewErpOdoo",

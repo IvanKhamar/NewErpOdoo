@@ -12,6 +12,22 @@ class FakeOpenCartSource:
         self.order_rows = orders or []
         self.fail = fail
         self.asked_since = []
+        self.size_stock = {}  # what the storefront shows: {size row id: quantity}
+        self.product_stock = {}  # {product id: quantity}
+        self.written = []  # every write_stock call
+
+    def stock(self, size_rows, product_ids):
+        self._maybe_fail()
+        return (
+            {row: self.size_stock[row] for row in size_rows if row in self.size_stock},
+            {pid: self.product_stock[pid] for pid in product_ids if pid in self.product_stock},
+        )
+
+    def write_stock(self, sizes, products):
+        self._maybe_fail()
+        self.written.append((dict(sizes), dict(products)))
+        self.size_stock.update(sizes)
+        self.product_stock.update(products)
 
     def orders(self, since, limit=500):
         self._maybe_fail()

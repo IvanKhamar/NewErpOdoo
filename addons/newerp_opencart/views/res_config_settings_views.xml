@@ -42,6 +42,10 @@
                                     <label for="newerp_opencart_language_id" class="col-lg-4 o_light_label" />
                                     <field name="newerp_opencart_language_id" />
                                 </div>
+                                <div class="row mt8">
+                                    <label for="newerp_opencart_warehouse_id" class="col-lg-4 o_light_label" />
+                                    <field name="newerp_opencart_warehouse_id" />
+                                </div>
                                 <div class="mt16">
                                     <button
                                         name="action_newerp_opencart_check"
@@ -59,6 +63,12 @@
                                         name="action_newerp_opencart_import_orders"
                                         type="object"
                                         string="Імпортувати замовлення"
+                                        class="btn-secondary ms-2"
+                                    />
+                                    <button
+                                        name="action_newerp_opencart_push_stock"
+                                        type="object"
+                                        string="Записати залишки у вітрину"
                                         class="btn-secondary ms-2"
                                     />
                                 </div>

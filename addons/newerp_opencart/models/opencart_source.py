@@ -125,6 +125,39 @@ class MySqlOpenCartSource:
             ]
         return orders
 
+    def stock(self, size_rows: list[int], product_ids: list[int]) -> tuple[dict[int, int], dict[int, int]]:
+        """The storefront's current quantities: {size row id: quantity}, {product id: quantity}."""
+        p, sizes, products = self._config.prefix, {}, {}
+        if size_rows:
+            sizes = {
+                row["product_option_value_id"]: row["quantity"]
+                for row in self._rows(
+                    f"SELECT product_option_value_id, quantity FROM {p}product_option_value "
+                    "WHERE product_option_value_id IN %s",
+                    [tuple(size_rows)],
+                )
+            }
+        if product_ids:
+            products = {
+                row["product_id"]: row["quantity"]
+                for row in self._rows(
+                    f"SELECT product_id, quantity FROM {p}product WHERE product_id IN %s", [tuple(product_ids)]
+                )
+            }
+        return sizes, products
+
+    def write_stock(self, sizes: dict[int, int], products: dict[int, int]) -> None:
+        """Writes the quantities the storefront shows: per size row, and per product (the sum of its sizes)."""
+        p = self._config.prefix
+        with self._cursor() as cursor:
+            for row_id, quantity in sizes.items():
+                cursor.execute(
+                    f"UPDATE {p}product_option_value SET quantity = %s WHERE product_option_value_id = %s",
+                    [quantity, row_id],
+                )
+            for product_id, quantity in products.items():
+                cursor.execute(f"UPDATE {p}product SET quantity = %s WHERE product_id = %s", [quantity, product_id])
+
     def _rows(self, sql: str, params: list) -> list[dict]:
         with self._cursor() as cursor:
             cursor.execute(sql, params)  # values as parameters; the prefix in the text is checked in __init__
