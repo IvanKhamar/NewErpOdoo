@@ -4,10 +4,18 @@ from odoo import api, models
 from odoo.exceptions import UserError
 
 from .opencart_source import MySqlOpenCartSource, OpenCartConfig, OpenCartError
+from .res_partner import phone_key
 
 _logger = logging.getLogger(__name__)
 
 PARAM = "newerp_opencart."
+ORDERS_SINCE = PARAM + "orders_since"  # date_modified of the last imported order: the next import starts there
+FIRST_IMPORT_SINCE = "2000-01-01 00:00:00"
+
+# order_status_id of the real shop (NewErpPython devseed) → what the order becomes in Odoo (table in docs/plan.md).
+QUOTATION_STATUSES = {24: None, 1: "newerp_base.tag_check_payment"}  # Уточнюємо, Перевірити оплату
+CONFIRMED_STATUSES = {18: None, 17: None, 25: None, 21: None, 22: None, 20: None, 23: "newerp_base.tag_urgent"}
+CANCELLED_STATUS = 19  # Відмінено
 
 
 class OpenCartSync(models.AbstractModel):
@@ -39,6 +47,19 @@ class OpenCartSync(models.AbstractModel):
     def import_catalog(self, raise_errors=True):
         """Categories, then products with their sizes as variants. Returns the run."""
         return self._run("catalog", self._import_catalog, raise_errors)
+
+    @api.model
+    def import_orders(self, raise_errors=True):
+        """Customers and orders changed since the last import. Returns the run."""
+        return self._run("orders", self._import_orders, raise_errors)
+
+    @api.model
+    def _cron_import(self):
+        """Scheduled action: the catalog, then the orders; quiet until the connection is set up."""
+        if not self.env["ir.config_parameter"].sudo().get_param(PARAM + "host"):
+            return
+        self.import_catalog(raise_errors=False)
+        self.import_orders(raise_errors=False)
 
     def _run(self, kind, step, raise_errors):
         Run = self.env["newerp.opencart.run"].sudo()
@@ -144,3 +165,126 @@ class OpenCartSync(models.AbstractModel):
         if not value:
             value = self.env["product.attribute.value"].create({"attribute_id": size_attribute.id, "name": name})
         return value
+
+    # ── Customers and orders ──
+
+    def _import_orders(self, source):
+        """Orders changed since the last import become sales orders, with their customers.
+
+        An order still a quotation in Odoo follows the shop (lines, status); a confirmed or cancelled one belongs to
+        the ERP and a later change in the shop does not touch it. An order with a product Odoo does not know is
+        skipped and named in the run: guessing a product would ship the wrong thing."""
+        params = self.env["ir.config_parameter"].sudo()
+        since = params.get_param(ORDERS_SINCE) or FIRST_IMPORT_SINCE
+        created = updated = 0
+        skipped, last_change = [], since
+        for row in source.orders(since):
+            last_change = max(last_change, row["date_modified"])
+            lines, missing = self._order_lines(row["lines"])
+            if missing:
+                skipped.append(f"#{row['order_id']}: немає товару {', '.join(missing)}")
+                continue
+            order = self.env["sale.order"].search([("opencart_id", "=", row["order_id"])], limit=1)
+            if not order:
+                order = self.env["sale.order"].create(
+                    {**self._order_values(row), "opencart_id": row["order_id"], "order_line": lines}
+                )
+                created += 1
+            elif order.state == "draft":
+                order.write({**self._order_values(row), "order_line": [(5, 0, 0), *lines]})
+                updated += 1
+            else:
+                continue
+            self._apply_status(order, row["order_status_id"])
+        params.set_param(ORDERS_SINCE, last_change)
+        message = "Пропущено (спершу імпортуйте товари): " + "; ".join(skipped) if skipped else ""
+        return created, updated, message
+
+    def _order_lines(self, rows):
+        """Order lines by the chosen size row, else by the product when it has one variant. No taxes: the shop's
+        prices already are the final ones."""
+        Product = self.env["product.product"]
+        lines, missing = [], []
+        for row in rows:
+            variant = (
+                Product.search([("opencart_id", "=", row["size_row_id"])], limit=1) if row["size_row_id"] else Product
+            )
+            if not variant:
+                template = self.env["product.template"].search([("opencart_id", "=", row["product_id"])], limit=1)
+                variant = template.product_variant_id if len(template.product_variant_ids) == 1 else Product
+            if not variant:
+                missing.append(f"«{row['name']}» ({row['product_id']})")
+                continue
+            lines.append(
+                (0, 0, {
+                    "product_id": variant.id,
+                    "product_uom_qty": row["quantity"],
+                    "price_unit": row["price"],
+                    "tax_ids": [(6, 0, [])],
+                })
+            )  # fmt: skip
+        return lines, missing
+
+    def _order_values(self, row):
+        method = (row["shipping_method"] or "").lower()
+        cod = row["payment_code"] == "cod" or "наклад" in (row["payment_method"] or "").lower()
+        values = {
+            "partner_id": self._customer(row).id,
+            "date_order": row["date_added"],
+            "origin": f"OpenCart #{row['order_id']}",
+            "note": row["comment"] or False,
+            "payment_term_id": self.env.ref(
+                "newerp_base.payment_term_cod" if cod else "newerp_base.payment_term_prepaid"
+            ).id,
+            "carrier_id": self._carrier(method).id,
+        }
+        if row["source"]:
+            source = self.env["utm.source"].search([("name", "=", row["source"])], limit=1)
+            values["source_id"] = (source or self.env["utm.source"].create({"name": row["source"]})).id
+        return values
+
+    def _carrier(self, method):
+        if "поштомат" in method:
+            return self.env.ref("newerp_base.carrier_np_locker")
+        if "нова пошта" in method or "novaposhta" in method:
+            return self.env.ref("newerp_base.carrier_np_branch")
+        if "укрпошта" in method:
+            return self.env.ref("newerp_base.carrier_ukrposhta")
+        if "самовивіз" in method or "pickup" in method:
+            return self.env.ref("newerp_base.carrier_pickup")
+        return self.env["delivery.carrier"]
+
+    def _customer(self, row):
+        """The shop's customer by its id; a guest by e-mail or phone, so the same person is not doubled."""
+        Partner = self.env["res.partner"]
+        partner = Partner
+        if row["customer_id"]:
+            partner = Partner.search([("opencart_id", "=", row["customer_id"])], limit=1)
+        if not partner and row["email"]:
+            partner = Partner.search([("email", "=ilike", row["email"].strip())], limit=1)
+        if not partner and (key := phone_key(row["telephone"])):
+            partner = Partner.search([("newerp_phone_key", "=", key)], limit=1)
+        values = {
+            "name": f"{row['firstname'] or ''} {row['lastname'] or ''}".strip() or row["telephone"] or row["email"],
+            "phone": row["telephone"] or False,
+            "email": (row["email"] or "").strip() or False,
+            "city": row["shipping_city"] or False,
+            "street": row["shipping_address_1"] or False,
+            "street2": row["shipping_address_2"] or False,
+        }
+        if not partner:
+            # A guest has customer_id 0: no link then (an Integer field would keep False as 0).
+            link = {"opencart_id": row["customer_id"]} if row["customer_id"] else {}
+            return Partner.create({**values, **link})
+        if row["customer_id"] and not partner.opencart_id:
+            partner.opencart_id = row["customer_id"]
+        return partner
+
+    def _apply_status(self, order, status_id):
+        tags = {**QUOTATION_STATUSES, **CONFIRMED_STATUSES}
+        if tags.get(status_id):
+            order.tag_ids = [(4, self.env.ref(tags[status_id]).id)]
+        if status_id == CANCELLED_STATUS:
+            order.action_cancel()
+        elif status_id in CONFIRMED_STATUSES:
+            order.action_confirm()

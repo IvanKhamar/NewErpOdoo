@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Off until the connection is set up: an admin turns it on in Settings → Technical → Scheduled Actions. -->
+    <record id="cron_import" model="ir.cron">
+        <field name="name">OpenCart: імпорт товарів і замовлень</field>
+        <field name="model_id" ref="model_newerp_opencart_sync" />
+        <field name="state">code</field>
+        <field name="code">model._cron_import()</field>
+        <field name="interval_number">15</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="False" />
+    </record>
+</odoo>
