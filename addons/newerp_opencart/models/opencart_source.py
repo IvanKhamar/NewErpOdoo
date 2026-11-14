@@ -78,6 +78,53 @@ class MySqlOpenCartSource:
             ]
         return products
 
+    def orders(self, since: str, limit: int = 500) -> list[dict]:
+        """Orders changed at or after `since` ("YYYY-MM-DD HH:MM:SS"), oldest change first, each with its lines.
+        Status 0 is an order the customer never finished; OpenCart keeps those, the ERP skips them.
+
+        [{order_id, customer_id, firstname, lastname, email, telephone, shipping_city, shipping_address_1,
+          shipping_address_2, shipping_method, shipping_code, payment_method, payment_code, comment, order_status_id,
+          source, date_added, date_modified, lines: [{product_id, name, model, quantity, price, size_row_id}]}]"""
+        p = self._config.prefix
+        orders = self._rows(
+            "SELECT o.order_id, o.customer_id, o.firstname, o.lastname, o.email, o.telephone, o.shipping_city, "
+            "o.shipping_address_1, o.shipping_address_2, o.shipping_method, o.shipping_code, o.payment_method, "
+            "o.payment_code, o.comment, o.order_status_id, COALESCE(s.name, '') AS source, o.date_added, "
+            f"o.date_modified FROM {p}order o "
+            f"LEFT JOIN {p}order_source s ON s.order_source_id = o.order_source_id AND s.language_id = %s "
+            "WHERE o.order_status_id > 0 AND o.date_modified >= %s ORDER BY o.date_modified, o.order_id LIMIT %s",
+            [self._config.language_id, since, limit],
+        )
+        if not orders:
+            return []
+        ids = tuple(order["order_id"] for order in orders)
+        lines = self._rows(
+            f"SELECT order_product_id, order_id, product_id, name, model, quantity, price FROM {p}order_product "
+            "WHERE order_id IN %s ORDER BY order_product_id",
+            [ids],
+        )
+        chosen = self._rows(
+            f"SELECT order_product_id, product_option_value_id FROM {p}order_option WHERE order_id IN %s",
+            [ids],
+        )
+        size_rows = {row["order_product_id"]: row["product_option_value_id"] for row in chosen}
+        for order in orders:
+            order["date_added"] = str(order["date_added"])
+            order["date_modified"] = str(order["date_modified"])
+            order["lines"] = [
+                {
+                    "product_id": line["product_id"],
+                    "name": line["name"],
+                    "model": line["model"],
+                    "quantity": line["quantity"],
+                    "price": float(line["price"]),
+                    "size_row_id": size_rows.get(line["order_product_id"]),
+                }
+                for line in lines
+                if line["order_id"] == order["order_id"]
+            ]
+        return orders
+
     def _rows(self, sql: str, params: list) -> list[dict]:
         with self._cursor() as cursor:
             cursor.execute(sql, params)  # values as parameters; the prefix in the text is checked in __init__

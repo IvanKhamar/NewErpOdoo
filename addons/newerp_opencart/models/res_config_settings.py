@@ -33,6 +33,16 @@ class ResConfigSettings(models.TransientModel):
             )
         )
 
+    def action_newerp_opencart_import_orders(self):
+        self.execute()
+        run = self.env["newerp.opencart.sync"].import_orders()
+        message = self.env._(
+            "Замовлення імпортовано: нових %(created)s, оновлених %(updated)s.",
+            created=run.created,
+            updated=run.updated,
+        )
+        return _notification(f"{message} {run.message}".strip())
+
 
 def _notification(message):
     return {

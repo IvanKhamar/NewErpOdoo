@@ -15,6 +15,15 @@ What it does now
   (``product_option_value_id``), the row the storefront counts stock on.
 * Importing again updates the linked records and adds nothing twice. OpenCart stock is not taken over: stock belongs
   to the ERP.
+* Customers: the shop's customer by its id; a guest by e-mail or phone (the last 9 digits, however the number was
+  typed), so the same person is not doubled.
+* Orders changed since the last import (by ``date_modified``) become sales orders: lines by the chosen size row,
+  the shop's prices without tax on top, the source, the delivery method, the payment term (cash on delivery or
+  prepaid). Statuses: Уточнюємо and Перевірити оплату stay quotations, Відмінено cancels, Прийнято and later confirm;
+  Терміново and Перевірити оплату add their tags. A quotation follows later changes in the shop; a confirmed or
+  cancelled order belongs to the ERP and is left alone. An order with a product Odoo does not know is skipped and
+  named in the run.
+* A scheduled action imports the catalog and the orders every 15 minutes; it is off until the connection is set up.
 * Every import is written to Sales → Configuration → OpenCart: запуски, with the error if it failed.
 
 Setup

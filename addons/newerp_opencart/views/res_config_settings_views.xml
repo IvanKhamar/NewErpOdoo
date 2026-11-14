@@ -55,6 +55,12 @@
                                         string="Імпортувати товари"
                                         class="btn-secondary ms-2"
                                     />
+                                    <button
+                                        name="action_newerp_opencart_import_orders"
+                                        type="object"
+                                        string="Імпортувати замовлення"
+                                        class="btn-secondary ms-2"
+                                    />
                                 </div>
                             </div>
                         </setting>
