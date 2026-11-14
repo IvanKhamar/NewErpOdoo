@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- The shop's delivery methods. A fixed price of 0 for now: phase 3 makes Nova Poshta a real provider with rates. -->
+    <data noupdate="1">
+        <record id="product_delivery_np_branch" model="product.product">
+            <field name="name">Доставка: Нова Пошта, відділення</field>
+            <field name="type">service</field>
+            <field name="list_price">0</field>
+            <field name="sale_ok" eval="False" />
+            <field name="purchase_ok" eval="False" />
+        </record>
+        <record id="carrier_np_branch" model="delivery.carrier">
+            <field name="name">Нова Пошта: відділення</field>
+            <field name="delivery_type">fixed</field>
+            <field name="fixed_price">0</field>
+            <field name="product_id" ref="product_delivery_np_branch" />
+            <field name="sequence">1</field>
+        </record>
+
+        <record id="product_delivery_np_locker" model="product.product">
+            <field name="name">Доставка: Нова Пошта, поштомат</field>
+            <field name="type">service</field>
+            <field name="list_price">0</field>
+            <field name="sale_ok" eval="False" />
+            <field name="purchase_ok" eval="False" />
+        </record>
+        <record id="carrier_np_locker" model="delivery.carrier">
+            <field name="name">Нова Пошта: поштомат</field>
+            <field name="delivery_type">fixed</field>
+            <field name="fixed_price">0</field>
+            <field name="product_id" ref="product_delivery_np_locker" />
+            <field name="sequence">2</field>
+        </record>
+
+        <record id="product_delivery_ukrposhta" model="product.product">
+            <field name="name">Доставка: Укрпошта</field>
+            <field name="type">service</field>
+            <field name="list_price">0</field>
+            <field name="sale_ok" eval="False" />
+            <field name="purchase_ok" eval="False" />
+        </record>
+        <record id="carrier_ukrposhta" model="delivery.carrier">
+            <field name="name">Укрпошта</field>
+            <field name="delivery_type">fixed</field>
+            <field name="fixed_price">0</field>
+            <field name="product_id" ref="product_delivery_ukrposhta" />
+            <field name="sequence">3</field>
+        </record>
+
+        <record id="product_delivery_pickup" model="product.product">
+            <field name="name">Самовивіз (Київ)</field>
+            <field name="type">service</field>
+            <field name="list_price">0</field>
+            <field name="sale_ok" eval="False" />
+            <field name="purchase_ok" eval="False" />
+        </record>
+        <record id="carrier_pickup" model="delivery.carrier">
+            <field name="name">Самовивіз (Київ)</field>
+            <field name="delivery_type">fixed</field>
+            <field name="fixed_price">0</field>
+            <field name="product_id" ref="product_delivery_pickup" />
+            <field name="sequence">4</field>
+        </record>
+    </data>
+</odoo>

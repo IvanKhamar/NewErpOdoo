@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- stock.warehouse0 belongs to stock and is noupdate, so a <record> here would be skipped. A function call in a
+         noupdate block runs once, on install, and an admin may rename the warehouse later. -->
+    <data noupdate="1">
+        <function model="stock.warehouse" name="write">
+            <value eval="[ref('stock.warehouse0')]" />
+            <value eval="{'name': 'Склад Київ', 'code': 'KYIV'}" />
+        </function>
+    </data>
+</odoo>

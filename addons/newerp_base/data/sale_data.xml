@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data noupdate="1">
+        <!-- Where an order came from: the UTM source every sales order already has (source_id). -->
+        <record id="source_site" model="utm.source">
+            <field name="name">Сайт</field>
+        </record>
+        <record id="source_instagram" model="utm.source">
+            <field name="name">Instagram</field>
+        </record>
+        <record id="source_phone" model="utm.source">
+            <field name="name">Телефон</field>
+        </record>
+        <record id="source_partner" model="utm.source">
+            <field name="name">Партнер</field>
+        </record>
+
+        <!-- The two OpenCart statuses that Odoo does not track by itself become sales tags. -->
+        <record id="tag_urgent" model="crm.tag">
+            <field name="name">Терміново</field>
+            <field name="color">1</field>
+        </record>
+        <record id="tag_check_payment" model="crm.tag">
+            <field name="name">Перевірити оплату</field>
+            <field name="color">3</field>
+        </record>
+
+        <!-- Payment terms: paid before shipping, or cash on delivery (the money comes after the parcel is taken). -->
+        <record id="payment_term_prepaid" model="account.payment.term">
+            <field name="name">Передоплата</field>
+            <field name="line_ids" eval="[(5, 0, 0), (0, 0, {'value': 'percent', 'value_amount': 100, 'nb_days': 0})]" />
+        </record>
+        <record id="payment_term_cod" model="account.payment.term">
+            <field name="name">Накладений платіж</field>
+            <field name="note">Покупець платить у відділенні, гроші надходять після отримання посилки.</field>
+            <field name="line_ids" eval="[(5, 0, 0), (0, 0, {'value': 'percent', 'value_amount': 100, 'nb_days': 14})]" />
+        </record>
+    </data>
+</odoo>

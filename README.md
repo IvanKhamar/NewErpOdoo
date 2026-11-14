@@ -11,7 +11,10 @@ SMSClub). Only invented data is used.
 
 | Addon | What it does |
 |---|---|
-| `newerp_base` | Installs the apps NewErp builds on; sets the company to Ukraine, the Ukrainian chart of accounts and the hryvnia |
+| `newerp_base` | Installs the apps NewErp builds on; sets the company to Ukraine, the Ukrainian chart of accounts and the hryvnia; the roles Менеджер, Комірник, Адміністратор; sizes and colours as variants, order sources and tags, payment terms, delivery methods, the Kyiv warehouse |
+
+Which features of the other versions standard Odoo already covers, and which our addons add, is in the table of
+[docs/plan.md](docs/plan.md).
 
 What comes next is in [docs/plan.md](docs/plan.md).
 
