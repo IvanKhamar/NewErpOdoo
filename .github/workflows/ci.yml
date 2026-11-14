@@ -22,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: echo "POSTGRES_PASSWORD=ci-only-password" > .env
+      - run: docker compose build odoo
       - run: docker compose up -d --wait db
       - run: docker compose run --rm odoo bash /mnt/tools/run_tests.sh
 

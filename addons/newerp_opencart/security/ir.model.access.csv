@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_newerp_opencart_run_admin,newerp.opencart.run admin,model_newerp_opencart_run,newerp_base.group_admin,1,0,0,0
