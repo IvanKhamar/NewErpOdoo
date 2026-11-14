@@ -4,7 +4,7 @@ from odoo import api, fields, models
 from odoo.exceptions import UserError
 
 from .novaposhta_api import NovaPoshtaApi
-from .np_warehouse import KINDS
+from .np_warehouse import CARRIER_KINDS
 from .stock_picking import _phone
 
 WAREHOUSES_PAGE_SIZE = 500
@@ -26,7 +26,7 @@ class DeliveryCarrier(models.Model):
         ondelete={"novaposhta": lambda carriers: carriers.write({"delivery_type": "fixed", "fixed_price": 0})},
     )
     np_api_key = fields.Char("Ключ API", groups="base.group_system", copy=False)
-    np_warehouse_kind = fields.Selection(KINDS, "Куди", default="branch")
+    np_warehouse_kind = fields.Selection(CARRIER_KINDS, "Куди", default="branch")
     np_sender_ref = fields.Char("Відправник (Ref контрагента)", groups="base.group_system")
     np_contact_ref = fields.Char("Контактна особа відправника (Ref)", groups="base.group_system")
     np_sender_phone = fields.Char("Телефон відправника", groups="base.group_system")
@@ -48,18 +48,17 @@ class DeliveryCarrier(models.Model):
         self.ensure_one()
         if not self.sudo().np_api_key:
             return self.fixed_rate_shipment(order)
-        if not order.np_warehouse_id:
-            return _rate_error("Оберіть у замовленні відділення Нової Пошти.")
         sender = self.sudo()
         try:
+            city_ref = order._np_city_ref()
             data = self._np_api().call(
                 "InternetDocument",
                 "getDocumentPrice",
                 {
                     "CitySender": sender.np_sender_city_ref,
-                    "CityRecipient": order.np_warehouse_id.city_ref,
+                    "CityRecipient": city_ref,
                     "Weight": _number(_order_weight(order)),
-                    "ServiceType": "WarehouseWarehouse",
+                    "ServiceType": self._np_service_type(),
                     "CargoType": "Parcel",
                     "SeatsAmount": "1",
                     "Cost": _number(order.amount_untaxed),
@@ -113,9 +112,10 @@ class DeliveryCarrier(models.Model):
         api, sender = self._np_api(), self.sudo()
         results = []
         for picking in pickings:
-            branch = picking.np_warehouse_id
-            if not branch:
-                raise UserError(self.env._("Оберіть у замовленні відділення Нової Пошти: без нього ТТН не створити."))
+            order = picking.sale_id
+            if not order:
+                raise UserError(self.env._("ТТН Нової Пошти створюється лише для доставки замовлення."))
+            city_ref = order._np_city_ref()  # a clear error when the branch or the courier address is missing
             partner = picking.partner_id
             first, _space, last = (partner.name or "").strip().partition(" ")
             phone = _phone(partner.phone)
@@ -130,25 +130,28 @@ class DeliveryCarrier(models.Model):
                     "Email": "",
                     "CounterpartyType": "PrivatePerson",
                     "CounterpartyProperty": "Recipient",
-                    "CityRef": branch.city_ref,
+                    "CityRef": city_ref,
                 },
             )[0]
             contacts = (recipient.get("ContactPerson") or {}).get("data") or []
             if not recipient.get("Ref") or not contacts:
                 raise UserError(self.env._("Нова Пошта не повернула отримувача чи його контактну особу."))
-            order = picking.sale_id
-            declared = order.amount_total if order else 0.0
+            # To the door the recipient's address is saved first, and the waybill points to it instead of a branch.
+            address = (
+                self._np_door_address(api, order, recipient["Ref"]) if self._np_is_door() else order.np_warehouse_id.ref
+            )
+            declared = order.amount_total
             properties = {
                 "PayerType": sender.np_payer or "Recipient",
                 "PaymentMethod": "Cash",
                 "DateTime": fields.Date.context_today(self).strftime("%d.%m.%Y"),
                 "CargoType": "Cargo",
-                "ServiceType": "WarehouseWarehouse",
+                "ServiceType": self._np_service_type(),
                 "Description": sender.np_cargo_description or "Одяг",
                 "Cost": _number(declared),
                 "SeatsAmount": "1",
                 "Weight": _number(max(picking.shipping_weight or picking.weight, MIN_WEIGHT_KG)),
-                "InfoRegClientBarcodes": order.name if order else picking.name,
+                "InfoRegClientBarcodes": order.name,
                 "Sender": sender.np_sender_ref,
                 "ContactSender": sender.np_contact_ref,
                 "SendersPhone": sender.np_sender_phone,
@@ -157,10 +160,10 @@ class DeliveryCarrier(models.Model):
                 "Recipient": recipient["Ref"],
                 "ContactRecipient": contacts[0].get("Ref"),
                 "RecipientsPhone": phone,
-                "CityRecipient": branch.city_ref,
-                "RecipientAddress": branch.ref,
+                "CityRecipient": city_ref,
+                "RecipientAddress": address,
             }
-            if order and order.payment_term_id == self.env.ref("newerp_base.payment_term_cod"):
+            if order.payment_term_id == self.env.ref("newerp_base.payment_term_cod"):
                 properties["AfterpaymentOnGoodsCost"] = _number(declared)
             document = api.call("InternetDocument", "save", properties)[0]
             number = str(document.get("IntDocNumber") or "")
@@ -170,6 +173,43 @@ class DeliveryCarrier(models.Model):
             self._np_attach_label(api, picking, number)
             results.append({"exact_price": float(document.get("CostOnSite") or 0), "tracking_number": number})
         return results
+
+    def _np_is_door(self):
+        return self.np_warehouse_kind == "door"
+
+    def _np_service_type(self):
+        return "WarehouseDoors" if self._np_is_door() else "WarehouseWarehouse"
+
+    def _np_door_address(self, api, order, recipient_ref):
+        """The street by its name in the order's city (Address.getStreet), then the recipient's address
+        (Address.save). A street that is not found, or not found exactly once, stops with a clear message."""
+        street = order.np_street.strip()
+        found = api.call("Address", "getStreet", {"CityRef": order.np_city_id.ref, "FindByString": street})
+        exact = [s for s in found if str(s.get("Description") or "").casefold() == street.casefold()]
+        matches = exact or found
+        if len(matches) != 1:
+            raise UserError(
+                self.env._(
+                    "Вулицю «%(street)s» у місті %(city)s знайдено %(count)s раз(и): уточніть назву.",
+                    street=street,
+                    city=order.np_city_id.name,
+                    count=len(matches),
+                )
+            )
+        address = api.call(
+            "Address",
+            "save",
+            {
+                "CounterpartyRef": recipient_ref,
+                "StreetRef": matches[0].get("Ref"),
+                "BuildingNumber": order.np_building.strip(),
+                "Flat": (order.np_flat or "").strip(),
+                "Note": "",
+            },
+        )
+        if not address or not address[0].get("Ref"):
+            raise UserError(self.env._("Нова Пошта не зберегла адресу отримувача."))
+        return address[0]["Ref"]
 
     def _np_attach_label(self, api, picking, number):
         pdf = api.label(picking.np_document_ref)

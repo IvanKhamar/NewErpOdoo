@@ -1,7 +1,7 @@
 {
     "name": "NewErp: Nova Poshta",
     "summary": "Nova Poshta as an Odoo delivery provider: rates, branches, waybills and tracking",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Inventory/Delivery",
     "author": "Ivan Khamar",
     "website": "https://github.com/IvanKhamar/NewErpOdoo",

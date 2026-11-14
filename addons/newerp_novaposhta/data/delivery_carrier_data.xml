@@ -11,5 +11,22 @@
             <value eval="[ref('newerp_base.carrier_np_locker')]" />
             <value eval="{'delivery_type': 'novaposhta', 'np_warehouse_kind': 'locker'}" />
         </function>
+
+        <!-- Courier to the door (NewErpPython item 23): its own method, the address is on the order. -->
+        <record id="product_delivery_np_door" model="product.product">
+            <field name="name">Доставка: Нова Пошта, кур'єр</field>
+            <field name="type">service</field>
+            <field name="list_price">0</field>
+            <field name="sale_ok" eval="False" />
+            <field name="purchase_ok" eval="False" />
+        </record>
+        <record id="carrier_np_door" model="delivery.carrier">
+            <field name="name">Нова Пошта: кур'єр</field>
+            <field name="delivery_type">novaposhta</field>
+            <field name="np_warehouse_kind">door</field>
+            <field name="fixed_price">0</field>
+            <field name="product_id" ref="product_delivery_np_door" />
+            <field name="sequence">3</field>
+        </record>
     </data>
 </odoo>

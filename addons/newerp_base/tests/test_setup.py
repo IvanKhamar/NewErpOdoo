@@ -40,8 +40,8 @@ class TestSetup(TransactionCase):
         self.assertEqual(order.payment_term_id.line_ids.value_amount, 100)
 
     def test_a_delivery_method_rates_an_order(self):
-        carriers = self.env["delivery.carrier"].search([("product_id.name", "like", "Доставка:")])
-        self.assertEqual(len(carriers), 3)  # Nova Poshta branch and locker, Ukrposhta; pickup is named apart
+        for xml_id in ("carrier_np_branch", "carrier_np_locker", "carrier_ukrposhta", "carrier_pickup"):
+            self.assertTrue(self.env.ref(f"newerp_base.{xml_id}").active)
         product = self.env["product.product"].create({"name": "Сорочка", "list_price": 900, "is_storable": True})
         order = self.env["sale.order"].create(
             {"partner_id": self.customer.id, "order_line": [(0, 0, {"product_id": product.id})]}

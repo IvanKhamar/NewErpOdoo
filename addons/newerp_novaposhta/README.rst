@@ -30,6 +30,11 @@ What it does now
   Final statuses (received, refused, returned) are not asked again. When a parcel waits at the branch and paid
   storage starts within a day, the order's salesperson gets one to-do activity, as the old site reminded.
 
+* Courier to the door (the method "Нова Пошта: кур'єр"): the order takes a city (kept from the branches list), a
+  street, a house and a flat. The rate and the waybill use ``WarehouseDoors``; before the waybill the street is
+  found by its name in the city (``Address.getStreet``) and the recipient's address saved (``Address.save``). A
+  street that is not found exactly once stops with a message to make the name clearer.
+
 Trying it
 =========
 
