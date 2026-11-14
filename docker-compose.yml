@@ -15,7 +15,9 @@ services:
       retries: 20
 
   odoo:
-    image: odoo:19.0-20261112
+    # The official image plus pymysql for the OpenCart connector (see Dockerfile).
+    build: .
+    image: newerp-odoo:19.0
     depends_on:
       db:
         condition: service_healthy
@@ -27,6 +29,9 @@ services:
     command: ["--dev=xml"]
     ports:
       - "127.0.0.1:8069:8069"
+    # The OpenCart database of NewErpPython runs in another compose project on the host (port 3307).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./addons:/mnt/extra-addons
       - ./config/odoo.conf:/etc/odoo/odoo.conf:ro
