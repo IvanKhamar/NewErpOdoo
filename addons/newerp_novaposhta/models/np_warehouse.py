@@ -1,6 +1,29 @@
 from odoo import fields, models
 
 KINDS = [("branch", "Відділення"), ("locker", "Поштомат")]
+CARRIER_KINDS = [*KINDS, ("door", "Кур'єр до дверей")]
+
+
+class NovaPoshtaCity(models.Model):
+    """A city Nova Poshta delivers to, kept from the branches list: the courier needs the city, not a branch."""
+
+    _name = "newerp.np.city"
+    _description = "Nova Poshta city"
+    _order = "name"
+
+    ref = fields.Char(required=True, index=True, readonly=True)
+    name = fields.Char(required=True, index=True, readonly=True)
+
+    _ref_unique = models.Constraint("UNIQUE(ref)", "This Nova Poshta city is in the list already.")
+
+    def _np_store(self, rows):
+        """The cities of the branch rows, created or renamed by their Ref."""
+        names = {str(r.get("CityRef")): str(r.get("CityDescription") or "") for r in rows if r.get("CityRef")}
+        existing = {c.ref: c for c in self.search([("ref", "in", list(names))])}
+        self.create([{"ref": ref, "name": name} for ref, name in names.items() if ref not in existing and name])
+        for ref, city in existing.items():
+            if names[ref] and city.name != names[ref]:
+                city.name = names[ref]
 
 
 class NovaPoshtaWarehouse(models.Model):
@@ -53,6 +76,7 @@ class NovaPoshtaWarehouse(models.Model):
                 branch.write(values)
                 updated += 1
         self.create(to_create)
+        self.env["newerp.np.city"]._np_store(rows)
         gone = [b.id for ref, b in existing.items() if ref not in seen and b.working]
         if rows and gone:  # an empty answer is a failure to read, not "every branch closed"
             self.browse(gone).write({"working": False})

@@ -9,10 +9,19 @@
                 <field name="np_warehouse_kind" invisible="1" />
                 <field
                     name="np_warehouse_id"
-                    invisible="not np_warehouse_kind"
+                    invisible="np_warehouse_kind not in ('branch', 'locker')"
                     options="{'no_create': True}"
                     readonly="state in ('cancel', 'sale')"
                 />
+                <field
+                    name="np_city_id"
+                    invisible="np_warehouse_kind != 'door'"
+                    options="{'no_create': True}"
+                    readonly="state in ('cancel', 'sale')"
+                />
+                <field name="np_street" invisible="np_warehouse_kind != 'door'" readonly="state in ('cancel', 'sale')" />
+                <field name="np_building" invisible="np_warehouse_kind != 'door'" readonly="state in ('cancel', 'sale')" />
+                <field name="np_flat" invisible="np_warehouse_kind != 'door'" readonly="state in ('cancel', 'sale')" />
             </xpath>
         </field>
     </record>

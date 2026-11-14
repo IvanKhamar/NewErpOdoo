@@ -1,1 +1,1 @@
-from . import test_provider, test_waybills
+from . import test_door, test_provider, test_waybills
