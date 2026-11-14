@@ -9,4 +9,14 @@
         <field name="interval_number">7</field>
         <field name="interval_type">days</field>
     </record>
+
+    <!-- Hourly: waybills that can still change; final statuses are not asked again. -->
+    <record id="cron_track" model="ir.cron">
+        <field name="name">Нова Пошта: трекінг ТТН</field>
+        <field name="model_id" ref="stock.model_stock_picking" />
+        <field name="state">code</field>
+        <field name="code">model._cron_np_track()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+    </record>
 </odoo>

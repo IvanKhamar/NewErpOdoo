@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 
 from .novaposhta_api import NovaPoshtaApi
 from .np_warehouse import KINDS
+from .stock_picking import _phone
 
 WAREHOUSES_PAGE_SIZE = 500
 MAX_WAREHOUSE_PAGES = 200  # 100 000 branches: a guard against an endless loop
@@ -100,6 +101,104 @@ class DeliveryCarrier(models.Model):
         carrier = self.search([("delivery_type", "=", "novaposhta")]).filtered(lambda c: c.sudo().np_api_key)[:1]
         if carrier:
             carrier.action_np_update_warehouses()
+
+    # ── Waybills ──
+
+    def novaposhta_send_shipping(self, pickings):
+        """Called when a delivery is validated: the recipient, then the waybill from the sender's branch to the
+        order's branch, as on the old site. Cash on delivery (the "Накладений платіж" term) goes as Nova Poshta's
+        "payment control" for the order's total. Without a key there is nothing to send: a fixed price, no number."""
+        if not self.sudo().np_api_key:
+            return [{"exact_price": self.fixed_price, "tracking_number": False} for _picking in pickings]
+        api, sender = self._np_api(), self.sudo()
+        results = []
+        for picking in pickings:
+            branch = picking.np_warehouse_id
+            if not branch:
+                raise UserError(self.env._("Оберіть у замовленні відділення Нової Пошти: без нього ТТН не створити."))
+            partner = picking.partner_id
+            first, _space, last = (partner.name or "").strip().partition(" ")
+            phone = _phone(partner.phone)
+            recipient = api.call(
+                "Counterparty",
+                "save",
+                {
+                    "FirstName": first,
+                    "MiddleName": "",
+                    "LastName": last or first,
+                    "Phone": phone,
+                    "Email": "",
+                    "CounterpartyType": "PrivatePerson",
+                    "CounterpartyProperty": "Recipient",
+                    "CityRef": branch.city_ref,
+                },
+            )[0]
+            contacts = (recipient.get("ContactPerson") or {}).get("data") or []
+            if not recipient.get("Ref") or not contacts:
+                raise UserError(self.env._("Нова Пошта не повернула отримувача чи його контактну особу."))
+            order = picking.sale_id
+            declared = order.amount_total if order else 0.0
+            properties = {
+                "PayerType": sender.np_payer or "Recipient",
+                "PaymentMethod": "Cash",
+                "DateTime": fields.Date.context_today(self).strftime("%d.%m.%Y"),
+                "CargoType": "Cargo",
+                "ServiceType": "WarehouseWarehouse",
+                "Description": sender.np_cargo_description or "Одяг",
+                "Cost": _number(declared),
+                "SeatsAmount": "1",
+                "Weight": _number(max(picking.shipping_weight or picking.weight, MIN_WEIGHT_KG)),
+                "InfoRegClientBarcodes": order.name if order else picking.name,
+                "Sender": sender.np_sender_ref,
+                "ContactSender": sender.np_contact_ref,
+                "SendersPhone": sender.np_sender_phone,
+                "CitySender": sender.np_sender_city_ref,
+                "SenderAddress": sender.np_sender_warehouse_ref,
+                "Recipient": recipient["Ref"],
+                "ContactRecipient": contacts[0].get("Ref"),
+                "RecipientsPhone": phone,
+                "CityRecipient": branch.city_ref,
+                "RecipientAddress": branch.ref,
+            }
+            if order and order.payment_term_id == self.env.ref("newerp_base.payment_term_cod"):
+                properties["AfterpaymentOnGoodsCost"] = _number(declared)
+            document = api.call("InternetDocument", "save", properties)[0]
+            number = str(document.get("IntDocNumber") or "")
+            if not number:
+                raise UserError(self.env._("Нова Пошта не повернула номер ТТН."))
+            picking.np_document_ref = document.get("Ref") or number
+            self._np_attach_label(api, picking, number)
+            results.append({"exact_price": float(document.get("CostOnSite") or 0), "tracking_number": number})
+        return results
+
+    def _np_attach_label(self, api, picking, number):
+        pdf = api.label(picking.np_document_ref)
+        if pdf is None:
+            picking.message_post(body=self.env._("Етикетку ТТН %(number)s Нова Пошта не віддала.", number=number))
+            return
+        label = self.env["ir.attachment"].create(
+            {
+                "name": f"ТТН {number}.pdf",
+                "raw": pdf,
+                "mimetype": "application/pdf",
+                "res_model": "stock.picking",
+                "res_id": picking.id,
+            }
+        )
+        picking.message_post(body=self.env._("Етикетка ТТН %(number)s.", number=number), attachment_ids=label.ids)
+
+    def novaposhta_cancel_shipment(self, pickings):
+        api = self._np_api()
+        for picking in pickings:
+            api.call(
+                "InternetDocument",
+                "delete",
+                {"DocumentRefs": [picking.np_document_ref or picking.carrier_tracking_ref]},
+            )
+            picking.write({"np_document_ref": False, "np_status": False, "np_status_code": 0, "np_reminded": False})
+
+    def novaposhta_get_tracking_link(self, picking):
+        return f"https://novaposhta.ua/tracking/?cargo_number={picking.carrier_tracking_ref}"
 
 
 def _rate_error(message):

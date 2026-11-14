@@ -5,6 +5,7 @@ are not logged: the key travels in the request body. It takes the Odoo environme
 """
 
 import logging
+from urllib.parse import quote
 
 import requests
 
@@ -13,6 +14,7 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 API_URL = "https://api.novaposhta.ua/v2.0/json/"
+PRINT_URL = "https://my.novaposhta.ua/orders/printMarkings/orders[]/{ref}/type/pdf/zebra/zebra/apiKey/{key}"
 TIMEOUT_SECONDS = 30
 
 
@@ -37,3 +39,15 @@ class NovaPoshtaApi:
             errors = "; ".join(map(str, answer.get("errors") or [])) or self._env._("без пояснення")
             raise UserError(self._env._("Нова Пошта відмовила: %(errors)s", errors=errors))
         return answer.get("data") or []
+
+    def label(self, document_ref):
+        """The waybill's label as PDF bytes, or None when Nova Poshta gives no PDF. The key is in this URL, so the
+        URL is never logged or shown."""
+        url = PRINT_URL.format(ref=quote(document_ref, safe=""), key=quote(self._api_key, safe=""))
+        try:
+            response = requests.get(url, timeout=TIMEOUT_SECONDS)
+        except requests.RequestException as error:
+            _logger.warning("Nova Poshta label failed: %s", type(error).__name__)
+            return None
+        # On an error Nova Poshta answers with a page or JSON; a real PDF starts with "%PDF".
+        return response.content if response.ok and response.content.startswith(b"%PDF") else None

@@ -13,7 +13,7 @@ SMSClub). Only invented data is used.
 |---|---|
 | `newerp_base` | Installs the apps NewErp builds on; sets the company to Ukraine, the Ukrainian chart of accounts and the hryvnia; the roles Менеджер, Комірник, Адміністратор; sizes and colours as variants, order sources and tags, payment terms, delivery methods, the Kyiv warehouse |
 | `newerp_opencart` | Connector to the OpenCart shop: categories, products with their sizes as variants, customers and orders with their statuses, and the free stock back to the storefront, on a schedule; settings in Settings → OpenCart, runs under Sales → Configuration |
-| `newerp_novaposhta` | Nova Poshta as a delivery provider: the account on the carrier, the branches and lockers directory, the rate on a quotation (waybills and tracking next) |
+| `newerp_novaposhta` | Nova Poshta as a delivery provider: the account on the carrier, the branches and lockers directory, the rate on a quotation, waybills with labels when a delivery is validated, hourly tracking and a reminder when a parcel waits |
 
 Which features of the other versions standard Odoo already covers, and which our addons add, is in the table of
 [docs/plan.md](docs/plan.md).

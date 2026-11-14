@@ -19,7 +19,16 @@ What it does now
   ``InternetDocument.getDocumentPrice``: from the sender's city to the branch's, with the order's weight and amount.
   Products without a weight count as 0.1 kg.
 
-Waybills, labels and tracking come in the next step.
+* Waybill: validating a delivery creates the recipient and the waybill (``Counterparty.save``,
+  ``InternetDocument.save``) from the sender's branch to the order's branch. An order with the payment term
+  "Накладений платіж" gets Nova Poshta's payment control for its total. The number goes to the delivery's tracking
+  reference, the cost to its shipping price, and the label PDF is attached to the delivery.
+* Cancelling the shipment deletes the waybill (``InternetDocument.delete``); the tracking link opens Nova Poshta's
+  public page.
+* Tracking: an hourly scheduled action asks ``TrackingDocument.getStatusDocuments`` about waybills that can still
+  change (100 per call) and keeps the status, the planned delivery and the start of paid storage on the delivery.
+  Final statuses (received, refused, returned) are not asked again. When a parcel waits at the branch and paid
+  storage starts within a day, the order's salesperson gets one to-do activity, as the old site reminded.
 
 Trying it
 =========
