@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Sizes and colours of the shop's clothes. Each value makes a variant, like the "Розмір" option of OpenCart. -->
+    <data noupdate="1">
+        <record id="attribute_size" model="product.attribute">
+            <field name="name">Розмір</field>
+            <field name="display_type">radio</field>
+            <field name="create_variant">always</field>
+            <field name="sequence">1</field>
+        </record>
+        <record id="size_s" model="product.attribute.value">
+            <field name="attribute_id" ref="attribute_size" />
+            <field name="name">S</field>
+            <field name="sequence">1</field>
+        </record>
+        <record id="size_m" model="product.attribute.value">
+            <field name="attribute_id" ref="attribute_size" />
+            <field name="name">M</field>
+            <field name="sequence">2</field>
+        </record>
+        <record id="size_l" model="product.attribute.value">
+            <field name="attribute_id" ref="attribute_size" />
+            <field name="name">L</field>
+            <field name="sequence">3</field>
+        </record>
+        <record id="size_xl" model="product.attribute.value">
+            <field name="attribute_id" ref="attribute_size" />
+            <field name="name">XL</field>
+            <field name="sequence">4</field>
+        </record>
+
+        <record id="attribute_colour" model="product.attribute">
+            <field name="name">Колір</field>
+            <field name="display_type">color</field>
+            <field name="create_variant">always</field>
+            <field name="sequence">2</field>
+        </record>
+        <record id="colour_black" model="product.attribute.value">
+            <field name="attribute_id" ref="attribute_colour" />
+            <field name="name">Чорний</field>
+            <field name="html_color">#000000</field>
+            <field name="sequence">1</field>
+        </record>
+        <record id="colour_white" model="product.attribute.value">
+            <field name="attribute_id" ref="attribute_colour" />
+            <field name="name">Білий</field>
+            <field name="html_color">#ffffff</field>
+            <field name="sequence">2</field>
+        </record>
+        <record id="colour_beige" model="product.attribute.value">
+            <field name="attribute_id" ref="attribute_colour" />
+            <field name="name">Бежевий</field>
+            <field name="html_color">#e8dcc4</field>
+            <field name="sequence">3</field>
+        </record>
+        <record id="colour_grey" model="product.attribute.value">
+            <field name="attribute_id" ref="attribute_colour" />
+            <field name="name">Сірий</field>
+            <field name="html_color">#8a8a8a</field>
+            <field name="sequence">4</field>
+        </record>
+    </data>
+</odoo>
