@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_account_journal_form" model="ir.ui.view">
+        <field name="name">account.journal.form.inherit.newerp_bank_ua</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Виписка з банку" name="newerp_bank" invisible="type != 'bank'">
+                    <group>
+                        <group>
+                            <field name="newerp_bank_source" />
+                            <button
+                                name="action_newerp_import_statement"
+                                type="object"
+                                string="Завантажити виписку"
+                                class="btn-secondary"
+                                invisible="not newerp_bank_source"
+                            />
+                        </group>
+                        <group
+                            string="ПриватБанк"
+                            groups="base.group_system"
+                            invisible="newerp_bank_source != 'privatbank'"
+                        >
+                            <field name="newerp_privat_client_id" />
+                            <field name="newerp_privat_token" password="True" />
+                        </group>
+                    </group>
+                    <p class="text-muted">
+                        Id і токен дає Приват24 для бізнесу: Інтеграції (Автоклієнт). Якщо Автоклієнт бачить кілька
+                        рахунків, задайте номер рахунку журналу: тоді в журнал потраплять лише його платежі.
+                    </p>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

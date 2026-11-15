@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_order_form" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.newerp_bank_ua</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page
+                    string="Оплати з банку"
+                    name="newerp_bank"
+                    groups="account.group_account_invoice"
+                    invisible="not newerp_bank_line_ids"
+                >
+                    <field name="newerp_bank_line_ids" readonly="1">
+                        <list>
+                            <field name="date" />
+                            <field name="newerp_bank_time" />
+                            <field name="journal_id" />
+                            <field name="partner_name" string="Платник" />
+                            <field name="payment_ref" string="Призначення" />
+                            <field name="amount" sum="Разом" />
+                            <field name="currency_id" column_invisible="1" />
+                        </list>
+                    </field>
+                    <group class="oe_subtotal_footer">
+                        <field name="newerp_bank_paid" />
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

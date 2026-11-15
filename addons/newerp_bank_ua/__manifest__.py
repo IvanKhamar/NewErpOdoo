@@ -1,0 +1,20 @@
+{
+    "name": "NewErp: Ukrainian bank statements",
+    "summary": "PrivatBank statements as bank statement lines, matched to sales orders automatically or by hand",
+    "version": "19.0.1.0.0",
+    "category": "Accounting/Accounting",
+    "author": "Ivan Khamar",
+    "website": "https://github.com/IvanKhamar/NewErpOdoo",
+    "license": "LGPL-3",
+    "depends": ["newerp_base", "account", "sale"],
+    "external_dependencies": {"python": ["requests"]},
+    "data": [
+        "security/ir.model.access.csv",
+        "views/account_journal_views.xml",
+        "views/bank_statement_line_views.xml",
+        "views/sale_order_views.xml",
+        "wizard/bank_import_wizard_views.xml",
+        "wizard/bank_match_wizard_views.xml",
+        "data/ir_cron.xml",
+    ],
+}

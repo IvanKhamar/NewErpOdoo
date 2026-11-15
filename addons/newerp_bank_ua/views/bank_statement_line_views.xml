@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Odoo Community has no screen for statement lines (the reconciliation screen is Enterprise), so the list of
+         incoming bank payments is our own. -->
+    <record id="view_bank_payment_list" model="ir.ui.view">
+        <field name="name">account.bank.statement.line.list.newerp_bank_ua</field>
+        <field name="model">account.bank.statement.line</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <list string="Банківські оплати" create="0" edit="0" delete="0" default_order="date desc, id desc">
+                <header>
+                    <button
+                        name="action_newerp_open_import"
+                        type="object"
+                        string="Завантажити виписку"
+                        class="btn-primary"
+                        display="always"
+                    />
+                    <button
+                        name="action_newerp_auto_match"
+                        type="object"
+                        string="Підібрати автоматично"
+                        display="always"
+                    />
+                </header>
+                <field name="date" />
+                <field name="newerp_bank_time" optional="show" />
+                <field name="journal_id" optional="show" />
+                <field name="partner_name" string="Платник" />
+                <field name="payment_ref" string="Призначення" />
+                <field name="amount" sum="Разом" />
+                <field name="currency_id" column_invisible="1" />
+                <field name="newerp_sale_order_id" />
+                <field name="newerp_hidden" column_invisible="1" />
+                <button
+                    name="action_newerp_find_order"
+                    type="object"
+                    string="Знайти замовлення"
+                    icon="fa-search"
+                    invisible="newerp_sale_order_id or newerp_hidden or amount &lt;= 0"
+                />
+                <button
+                    name="action_newerp_unlink_order"
+                    type="object"
+                    string="Відв'язати"
+                    icon="fa-chain-broken"
+                    invisible="not newerp_sale_order_id"
+                    confirm="Відв'язати платіж від замовлення?"
+                />
+                <button
+                    name="action_newerp_hide"
+                    type="object"
+                    string="Не замовлення"
+                    icon="fa-eye-slash"
+                    invisible="newerp_sale_order_id or newerp_hidden"
+                />
+                <button
+                    name="action_newerp_show"
+                    type="object"
+                    string="Повернути"
+                    icon="fa-eye"
+                    invisible="not newerp_hidden"
+                />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bank_payment_search" model="ir.ui.view">
+        <field name="name">account.bank.statement.line.search.newerp_bank_ua</field>
+        <field name="model">account.bank.statement.line</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <search string="Банківські оплати">
+                <field name="payment_ref" string="Призначення" />
+                <field name="partner_name" string="Платник" />
+                <field name="amount" />
+                <field name="newerp_sale_order_id" />
+                <field name="journal_id" />
+                <filter
+                    name="to_match"
+                    string="Без замовлення"
+                    domain="[('newerp_sale_order_id', '=', False), ('newerp_hidden', '=', False)]"
+                />
+                <filter name="linked" string="Прив'язані" domain="[('newerp_sale_order_id', '!=', False)]" />
+                <filter name="hidden" string="Не замовлення" domain="[('newerp_hidden', '=', True)]" />
+                <separator />
+                <filter name="date" string="Дата" date="date" />
+                <group>
+                    <filter name="group_journal" string="Рахунок" context="{'group_by': 'journal_id'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bank_payments" model="ir.actions.act_window">
+        <field name="name">Банківські оплати</field>
+        <field name="res_model">account.bank.statement.line</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('amount', '&gt;', 0)]</field>
+        <field name="context">{'search_default_to_match': 1}</field>
+        <field name="search_view_id" ref="view_bank_payment_search" />
+        <field
+            name="view_ids"
+            eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('view_bank_payment_list')})]"
+        />
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Вхідних платежів ще немає</p>
+            <p>Задайте банк і ключі на банківському журналі, тоді натисніть «Завантажити виписку».</p>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_bank_payments"
+        name="Банківські оплати"
+        parent="sale.sale_order_menu"
+        action="action_bank_payments"
+        groups="account.group_account_invoice"
+        sequence="50"
+    />
+</odoo>

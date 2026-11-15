@@ -102,3 +102,11 @@ class TestOrderImport(TransactionCase):
         self.assertFalse(self._order(1009))
         self.assertIn("#1009", run.message)
         self.assertIn("«Шарф» (999)", run.message)
+
+    def test_the_shop_number_finds_the_order(self):
+        """A customer writes the shop's number in a bank payment, so the bank matching and the search know it."""
+        self.source.order_rows = [order(2045, 18, [(*BELT, 1, 450.0, None)])]
+        self.sync.import_orders()
+        sale = self._order(2045)
+        self.assertIn(2045, sale._newerp_reference_numbers())
+        self.assertIn(sale, self.env["sale.order"].search(sale._newerp_search_domain("2045")))

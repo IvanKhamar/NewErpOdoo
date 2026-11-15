@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_newerp_bank_import_wizard,newerp.bank.import.wizard,model_newerp_bank_import_wizard,account.group_account_invoice,1,1,1,1
+access_newerp_bank_match_wizard,newerp.bank.match.wizard,model_newerp_bank_match_wizard,account.group_account_invoice,1,1,1,1
+access_newerp_bank_match_candidate,newerp.bank.match.candidate,model_newerp_bank_match_candidate,account.group_account_invoice,1,1,1,1

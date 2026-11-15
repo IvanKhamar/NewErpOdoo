@@ -2,7 +2,7 @@
     "name": "NewErp: base",
     "summary": "Shared settings of NewErp on Odoo: the standard apps it builds on, Ukraine, the hryvnia, roles and "
     "the shop's sizes, sources and delivery methods",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Hidden",
     "author": "Ivan Khamar",
     "website": "https://github.com/IvanKhamar/NewErpOdoo",
