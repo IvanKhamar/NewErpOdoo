@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_bank_match_wizard_form" model="ir.ui.view">
+        <field name="name">newerp.bank.match.wizard.form</field>
+        <field name="model">newerp.bank.match.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Замовлення для платежу">
+                <group>
+                    <field name="amount" />
+                    <field name="currency_id" invisible="1" />
+                    <field name="partner_name" string="Платник" />
+                    <field name="payment_ref" string="Призначення" />
+                </group>
+                <div class="d-flex gap-2 mb-2">
+                    <field name="search_text" placeholder="Номер замовлення, ім'я чи телефон покупця" />
+                    <button name="action_search" type="object" string="Шукати" class="btn-secondary" />
+                </div>
+                <field name="candidate_ids" readonly="1" nolabel="1">
+                    <list>
+                        <field name="order_id" />
+                        <field name="partner_id" />
+                        <field name="date_order" />
+                        <field name="amount_total" />
+                        <field name="currency_id" column_invisible="1" />
+                        <field name="state" />
+                        <field name="reasons" />
+                        <field name="score" />
+                        <button name="action_link" type="object" string="Прив'язати" class="btn-primary" />
+                    </list>
+                </field>
+                <footer>
+                    <button special="cancel" string="Закрити" />
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

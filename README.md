@@ -15,6 +15,7 @@ SMSClub). Only invented data is used.
 | `newerp_opencart` | Connector to the OpenCart shop: categories, products with their sizes as variants, customers and orders with their statuses, and the free stock back to the storefront, on a schedule; settings in Settings → OpenCart, runs under Sales → Configuration |
 | `newerp_novaposhta` | Nova Poshta as a delivery provider: the account on the carrier, the branches, lockers and cities directory, the rate on a quotation, courier to the door, waybills with labels when a delivery is validated, hourly tracking and a reminder when a parcel waits |
 | `newerp_opencart_novaposhta` | Bridge, installs itself with both: orders from OpenCart get their Nova Poshta branch (or the courier and its city) from the order text |
+| `newerp_bank_ua` | Bank statements of PrivatBank into bank journals; each incoming payment matched to its order, automatically when exactly one order is sure, else by a manager from a ranked list (Sales → Orders → Банківські оплати) |
 
 Which features of the other versions standard Odoo already covers, and which our addons add, is in the table of
 [docs/plan.md](docs/plan.md).

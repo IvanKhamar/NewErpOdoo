@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_bank_import_wizard_form" model="ir.ui.view">
+        <field name="name">newerp.bank.import.wizard.form</field>
+        <field name="model">newerp.bank.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Завантажити виписку">
+                <group>
+                    <field name="journal_ids" widget="many2many_tags" options="{'no_create': True}" />
+                    <field name="date_from" />
+                    <field name="date_to" />
+                </group>
+                <p class="text-muted">
+                    Не більше 31 дня за раз. Уже завантажені платежі пропускаються, а нові вхідні одразу
+                    підбираються до замовлень, коли замовлення одне й певне.
+                </p>
+                <footer>
+                    <button name="action_import" type="object" string="Завантажити" class="btn-primary" />
+                    <button special="cancel" string="Скасувати" />
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
