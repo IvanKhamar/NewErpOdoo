@@ -1,7 +1,7 @@
 {
     "name": "NewErp: Ukrainian bank statements",
-    "summary": "PrivatBank statements as bank statement lines, matched to sales orders automatically or by hand",
-    "version": "19.0.1.0.0",
+    "summary": "PrivatBank and monobank statements as bank statement lines, matched to sales orders and their invoices",
+    "version": "19.0.1.1.0",
     "category": "Accounting/Accounting",
     "author": "Ivan Khamar",
     "website": "https://github.com/IvanKhamar/NewErpOdoo",

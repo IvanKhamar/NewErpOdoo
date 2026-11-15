@@ -84,6 +84,7 @@ class AccountBankStatementLine(models.Model):
         goes, and the order's chatter keeps a note."""
         self.ensure_one()
         self.sudo().write({"newerp_sale_order_id": order.id, "partner_id": order.partner_id.commercial_partner_id.id})
+        self.sudo()._newerp_reconcile_invoices()
         order = order.sudo()
         check_payment = self.env.ref("newerp_base.tag_check_payment", raise_if_not_found=False)
         if check_payment and check_payment in order.tag_ids:
@@ -96,6 +97,48 @@ class AccountBankStatementLine(models.Model):
                 purpose=self.payment_ref or "",
             )
         )
+
+    # ── Accounting ──
+
+    def _newerp_open_receivables(self):
+        """The unpaid receivable lines of the linked order's posted customer invoices."""
+        invoices = self.newerp_sale_order_id.invoice_ids.filtered(
+            lambda move: move.state == "posted" and move.move_type == "out_invoice"
+        )
+        return invoices.line_ids.filtered(
+            lambda line: line.account_id.account_type == "asset_receivable" and not line.reconciled
+        )
+
+    def _newerp_reconcile_invoices(self):
+        """What Odoo's Enterprise reconciliation screen does for a payment of an invoice: the line's suspense item
+        becomes the customer's receivable and is reconciled with the invoices. More money than the invoices ask
+        stays on the receivable as the customer's credit, which Odoo offers on the next invoice. A line an
+        accountant already worked on (no suspense item, or other items) is left as it is."""
+        for line in self.filtered(lambda line: line.newerp_sale_order_id and line.amount > 0):
+            receivables = line._newerp_open_receivables()
+            _liquidity, suspense, others = line._seek_for_lines()
+            if not receivables or len(suspense) != 1 or others:
+                continue
+            account = receivables[0].account_id
+            line.with_context(skip_readonly_check=True).write(
+                {
+                    "line_ids": [
+                        fields.Command.update(
+                            suspense.id,
+                            {"account_id": account.id, "partner_id": receivables[0].partner_id.id},
+                        )
+                    ]
+                }
+            )
+            (suspense + receivables.filtered(lambda item, account=account: item.account_id == account)).reconcile()
+
+    def _newerp_undo_reconciliation(self):
+        """Back to the suspense account, but only for lines reconciled with the linked order's own invoices."""
+        for line in self.filtered("newerp_sale_order_id"):
+            invoices = line.newerp_sale_order_id.invoice_ids
+            matched = line.line_ids.matched_debit_ids.debit_move_id | line.line_ids.matched_credit_ids.credit_move_id
+            if matched and matched.move_id <= invoices:
+                line.action_undo_reconciliation()
 
     def _newerp_check_access(self):
         if not self.env.user.has_group(MATCHING_GROUP):
@@ -124,6 +167,7 @@ class AccountBankStatementLine(models.Model):
                     date=fields.Date.to_string(line.date),
                 )
             )
+            line.sudo()._newerp_undo_reconciliation()
             line.sudo().newerp_sale_order_id = False
 
     def action_newerp_hide(self):
