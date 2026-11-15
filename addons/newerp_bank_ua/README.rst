@@ -9,9 +9,14 @@ clicks. The rules are those of NewErpPython (phase 9 and item 28).
 What it does
 ============
 
-* A bank journal gets the page "Виписка з банку": the bank (ПриватБанк) and the keys of its Autoclient (id and
-  token, for administrators only). Several accounts and business cards are several journals. With the journal's
-  account number set, only that account's rows come in, when one Autoclient sees several accounts.
+* A bank journal gets the page "Виписка з банку": the bank and its keys, for administrators only. Several accounts
+  and business cards are several journals.
+
+  * ПриватБанк: the id and token of its Autoclient. With the journal's account number set, only that account's
+    rows come in, when one Autoclient sees several accounts.
+  * monobank: the personal token and the account id (for example the sole proprietor's account; empty is the main
+    one). Sums come in kopecks and times in Unix seconds; they become hryvnias and Kyiv days. monobank answers once
+    a minute with at most 500 rows, so a fuller period asks to be loaded in parts.
 * "Завантажити виписку" (on the journal and on the payments list) loads any period up to 31 days; an hourly
   scheduled action, off by default, loads yesterday and today. All rows go in, incoming and outgoing, so the
   journal's balance is right. A row already loaded is skipped, so loading again is safe.
@@ -27,11 +32,18 @@ What it does
 * Linking makes the order's customer the payer of the line, removes the tag "Перевірити оплату" from the order and
   leaves a note in its chatter. The order shows its payments on the tab "Оплати з банку".
 
+* Accounting: when the order has a posted customer invoice, the payment pays it. The line's suspense item becomes the
+  customer's receivable and is reconciled with the invoice (in part for an advance; more money stays as the
+  customer's credit, which Odoo offers on the next invoice). A payment that came before the invoice is reconciled
+  when the invoice is posted. Unlinking undoes it. Without an invoice, as for orders from OpenCart, the link alone is
+  the record and the line waits in the suspense account.
+
 Odoo Community has no bank reconciliation screen (it is Enterprise), so the list of payments and the matching are
 this addon's own. Managers only read statement lines in Odoo; linking checks the user's role and then writes.
 
 Trying it
 =========
 
-The keys come from Privat24 for business: Integrations, Autoclient. The tests never call the bank: they answer with
-the statement JSON of PrivatBank's documentation.
+PrivatBank's keys come from Privat24 for business: Integrations, Autoclient. A monobank token comes free from
+api.monobank.ua for one's own accounts, so the monobank import is the easiest to try on real data. The tests never
+call a bank: they answer with the JSON of the banks' documentation.
